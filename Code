@@ -1,0 +1,51 @@
+function doGet() {
+  return HtmlService.createHtmlOutputFromFile('Index')
+    .setTitle('งานการกุศลปอเนาะคลองน้ำ')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+// ดึงยอดบริจาครวมจาก Google Sheet
+function getDonationData() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Donations');
+  const data = sheet.getDataRange().getValues();
+  let total = 0;
+  
+  // สมมติว่า Row 1 เป็น Header และ Column B (Index 1) คือจำนวนเงิน
+  for (let i = 1; i < data.length; i++) {
+    let amount = parseFloat(data[i][1]) || 0;
+    total += amount;
+  }
+  
+  return { total: total };
+}
+
+// บันทึกรายการบริจาคใหม่ลง Sheet
+function addDonation(donorData) {
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(10000);
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Donations');
+    sheet.appendRow([
+      new Date(),
+      parseFloat(donorData.amount) || 0,
+      donorData.name,
+      donorData.note
+    ]);
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: 'ระบบยุ่งอยู่ กรุณาลองใหม่อีกครั้ง' };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// ฟังก์ชันสำหรับจัดการรูป Base64 ลง PropertiesService
+function uploadLogoImage(base64Data) {
+  PropertiesService.getScriptProperties().setProperty('LOGO_IMAGE', base64Data);
+  return { success: true };
+}
+
+function uploadQRCode(base64Data) {
+  PropertiesService.getScriptProperties().setProperty('QR_IMAGE', base64Data);
+  return { success: true };
+}
