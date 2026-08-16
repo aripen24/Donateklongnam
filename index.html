@@ -1,13 +1,699 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <base target="_top">
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบงานการกุศลปอเนาะคลองน้ำ</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบแสดงยอดบริจาคงานการกุศล</title>
+  <!-- Tailwind CSS & Google Fonts (Kanit) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    /* ตั้งค่า Class สำหรับ ฟอนต์ Sans-serif (อ่านง่าย ชัดเจน) */
+    .font-sans-clean {
+      font-family: 'Kanit', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    
+    @keyframes marquee {
+      0% { transform: translateX(100%); }
+      100% { transform: translateX(-100%); }
+    }
+    .animate-marquee {
+      display: inline-block;
+      white-space: nowrap;
+      animation: marquee 25s linear infinite;
+    }
+    .animate-marquee:hover {
+      animation-play-state: paused;
+    }
+    /* ปรับขนาดตัวเลขยอดบริจาคให้ยืดหยุ่นตามขนาดหน้าจอ */
+    .fluid-donation-number {
+      font-size: clamp(2.8rem, 6.5vw, 8.5rem);
+      line-height: 0.95;
+      letter-spacing: 0.02em;
+    }
+    .fluid-currency-symbol {
+      font-size: clamp(1.8rem, 3.8vw, 4.5rem);
+      margin-left: 0.3em;
+    }
+    
+    /* สไตล์นาฬิกา: โทนสี Emerald Glow */
+    .glow-clock {
+      text-shadow: 0 0 16px rgba(16, 185, 129, 0.5), 0 0 32px rgba(16, 185, 129, 0.2);
+    }
+    .clock-digit {
+      display: inline-block;
+      width: 0.62em;
+      text-align: center;
+    }
+    .clock-colon {
+      display: inline-block;
+      margin: 0 0.1em;
+      opacity: 0.85;
+    }
+
+    /* Custom Scrollbar สำหรับ Modal */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 3px;
+    }
+  </style>
 </head>
-<body>
-    <iframe style="width: 100%; height: 100vh;" scrolling="yes" src="https://script.google.com/macros/s/AKfycbzydmuXW5c_AxaIlCbSHWUtlCWjQpbK2n0J4MxYK6w/dev" frameborder="0"></iframe>
+<body class="bg-slate-900 text-white font-['Kanit'] min-h-screen lg:h-screen flex flex-col justify-between overflow-x-hidden lg:overflow-hidden relative">
+
+  <!-- Header & Action Buttons -->
+  <header class="px-4 md:px-6 py-3 flex flex-wrap sm:flex-nowrap justify-between items-center gap-3 relative z-10 border-b border-white/10 bg-slate-900/50 backdrop-blur-md shrink-0">
+    <!-- ปุ่มควบคุมเสียงอ่านสองภาษา -->
+    <div class="flex items-center gap-2 bg-slate-800/80 p-1 rounded-full border border-white/10 w-full sm:w-auto justify-between sm:justify-start">
+      <button id="tts-toggle" onclick="toggleTTS()" class="px-3 md:px-3.5 py-1.5 rounded-full text-xs md:text-sm font-semibold transition flex items-center gap-1.5 bg-emerald-500 text-white shadow">
+        🔊 เสียงอ่าน 2 ภาษา (TH / ID): เปิด
+      </button>
+      <button onclick="triggerReadDonation()" class="px-3 md:px-3.5 py-1.5 rounded-full text-xs md:text-sm font-semibold bg-white/10 hover:bg-white/20 text-slate-200 transition flex items-center gap-1.5">
+        📢 อ่านยอด
+      </button>
+    </div>
+
+    <div class="flex items-center gap-2 md:gap-3 w-full sm:w-auto justify-end">
+      <button onclick="openDonateModal()" class="flex-1 sm:flex-none justify-center bg-emerald-500 hover:bg-emerald-600 text-white px-4 md:px-5 py-2 rounded-full flex items-center gap-2 shadow-lg transition font-semibold hover:scale-105 active:scale-95 text-xs sm:text-sm md:text-base">
+        💸 บริจาค / แก้ไขยอด
+      </button>
+      <button onclick="openSettingsModal()" class="bg-white/10 hover:bg-white/20 text-white px-4 md:px-5 py-2 rounded-full flex items-center gap-2 border border-white/20 transition text-xs sm:text-sm md:text-base">
+        ⚙️ ตั้งค่า
+      </button>
+    </div>
+  </header>
+
+  <!-- Layout หลัก (Responsive: Grid 1 คอลัมน์บนมือถือ/แท็บเล็ต, 4 คอลัมน์บนเดสก์ท็อป) -->
+  <main class="flex-1 p-4 md:p-6 grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6 items-stretch overflow-y-auto lg:overflow-hidden">
+    
+    <!-- ช่องที่ 1 (ซ้ายมือบน Desktop / บนสุดบน Mobile) -->
+    <div class="bg-slate-800/40 border border-white/10 rounded-3xl backdrop-blur-md flex flex-col justify-between shadow-xl lg:col-span-1 overflow-hidden relative">
+      
+      <!-- Container โลโก้ชิดขอบบน Left/Right/Top -->
+      <div class="w-full relative group bg-slate-950/40 border-b border-white/10">
+        <img id="display-logo" src="https://i.postimg.cc/kX9vtX6n/Untitled-1-(2)-(1).png" alt="Logo" class="w-full h-36 sm:h-44 md:h-52 lg:h-56 object-cover object-center transition-transform duration-500 group-hover:scale-105">
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/20 to-transparent"></div>
+      </div>
+
+      <!-- ส่วนเนื้อหาข้อความชื่องาน & สถานที่ -->
+      <div class="px-5 py-3 md:px-6 md:py-2 flex-1 flex flex-col justify-center space-y-2">
+        <h1 id="display-event-name" class="text-xl sm:text-2xl md:text-3xl font-extrabold text-white leading-tight">งานการกุศลปอเนาะคลองน้ำ</h1>
+        <p class="text-xs sm:text-sm md:text-base text-slate-300 flex items-start sm:items-center gap-1.5">
+          📍 <span id="display-location">ปอเนาะคลองน้ำ ต.บาราเฮาะ อ.เมือง จ.ปัตตานี</span>
+        </p>
+      </div>
+
+      <!-- ส่วนนาฬิกาแสดงเวลา (ตัวเลขสี Emerald) -->
+      <div class="p-4 pt-0">
+        <div class="relative p-0.5 rounded-2xl bg-gradient-to-r from-emerald-500/30 via-emerald-400/20 to-teal-500/30 shadow-lg">
+          <div class="bg-slate-950/80 backdrop-blur-md p-3 sm:p-4 rounded-2xl border border-white/10 flex flex-col items-center justify-center text-center space-y-1.5 sm:space-y-2">
+            <div id="clock" class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-emerald-400 font-sans-clean glow-clock drop-shadow-md flex items-center justify-center">00:00:00</div>
+            <div id="current-date" class="text-[11px] sm:text-xs text-slate-300 font-medium flex items-center gap-1.5 pt-1.5 sm:pt-2 border-t border-white/10 w-full justify-center">
+              📅 วันที่ -- -------- ----
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ช่องที่ 2 (กลาง - แสดงตัวเลขยอดบริจาค) -->
+    <div class="bg-slate-800/80 border border-white/10 rounded-3xl p-5 md:p-8 backdrop-blur-md text-center flex flex-col justify-between items-center shadow-2xl relative overflow-hidden lg:col-span-2 min-h-[280px] lg:min-h-0">
+      <div class="absolute -top-16 -right-16 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+      <!-- ข้อความหัวข้อ -->
+      <p class="text-slate-300 tracking-widest text-lg sm:text-2xl md:text-3xl font-bold uppercase pt-1">ยอดบริจาคสะสมปัจจุบัน</p>
+      
+      <div class="my-auto w-full flex items-center justify-center overflow-hidden py-4 sm:py-2">
+        <div class="fluid-donation-number font-black text-white drop-shadow-2xl flex items-baseline justify-center whitespace-nowrap max-w-full">
+          <span id="donation-total" class="font-extrabold">0</span>
+          <span class="fluid-currency-symbol text-emerald-400 font-bold">฿</span>
+        </div>
+      </div>
+
+      <div class="space-y-2 sm:space-y-3 w-full max-w-xl pb-2">
+        <div class="w-full bg-slate-900 rounded-full h-5 sm:h-6 p-1 border border-slate-700/80 shadow-inner">
+          <div id="progress-bar" class="bg-gradient-to-r from-emerald-500 via-emerald-400 to-lime-400 h-full rounded-full transition-all duration-1000 shadow-md" style="width: 0%;"></div>
+        </div>
+        <div class="flex justify-between text-xs sm:text-base md:text-lg text-slate-300 font-medium px-1">
+          <span>ความคืบหน้า <strong id="progress-percent" class="text-emerald-400 font-bold">0%</strong></span>
+          <span>เป้าหมาย <strong id="display-goal" class="text-emerald-400 font-bold">1,500,000 ฿</strong></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ช่องที่ 3 (ขวา - ช่องทางโอนเงินบริจาค) -->
+    <div class="bg-slate-800/40 border border-white/10 rounded-3xl p-5 md:p-6 text-center backdrop-blur-md flex flex-col justify-between shadow-xl lg:col-span-1">
+      <div class="space-y-2 sm:space-y-3 flex flex-col items-center w-full">
+        <!-- ปรับสีข้อความหัวข้อเป็น text-white (สีขาว) -->
+        <p class="text-white text-base sm:text-lg md:text-xl font-extrabold uppercase tracking-wide mb-1 border-b border-white/20 pb-1 w-full text-center">
+          ช่องทางโอนเงินบริจาค
+        </p>
+        
+        <div class="bg-white/10 p-2 sm:p-2.5 rounded-2xl border border-white/10 shadow-md inline-block my-1">
+          <img id="display-bank-logo" src="https://upload.wikimedia.org/wikipedia/th/thumb/4/4a/Logo_GSB_Thailand.svg/960px-Logo_GSB_Thailand.svg.png?utm_source=th.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail" alt="โลโก้ธนาคาร" class="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 object-contain">
+        </div>
+
+        <p id="display-bank-name" class="text-slate-200 text-base sm:text-lg md:text-xl font-bold">ธนาคารออมสิน</p>
+        <p id="display-account-name" class="text-white text-lg sm:text-xl md:text-2xl font-black text-amber-300">เจะมารูดิน อิสมิง</p>
+        
+        <!-- เลขบัญชี -->
+        <div id="display-account-no" class="text-lg sm:text-xl md:text-3xl font-black text-emerald-400 font-sans-clean bg-slate-950/90 py-2 sm:py-2.5 px-4 sm:px-5 rounded-2xl border border-emerald-400/30 inline-block shadow-2xl tracking-wider w-full">
+          020-4-2153701-8
+        </div>
+      </div>
+
+      <div class="flex flex-col items-center mt-3 pt-3 border-t border-white/10 w-full">
+        <div class="bg-white p-2.5 sm:p-3 rounded-2xl inline-block shadow-2xl hover:scale-105 transition-transform duration-300">
+          <img id="display-qr-code" src="https://promptpay.io/0984187156" alt="QR Code" class="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 lg:w-40 lg:h-40 object-contain">
+        </div>
+        <p class="text-[11px] sm:text-xs md:text-sm text-slate-300 mt-2 font-medium">📲 สแกน QR Code เพื่อบริจาคเงิน</p>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Modal ตั้งค่า -->
+  <div id="settings-modal" class="fixed inset-0 bg-black/75 backdrop-blur-md hidden items-center justify-center z-50 p-3 sm:p-4">
+    <div class="bg-slate-800 border border-white/10 rounded-2xl w-full max-w-xl p-5 sm:p-6 shadow-2xl relative space-y-4 sm:space-y-6 max-h-[90vh] flex flex-col">
+      <div class="flex justify-between items-center border-b border-white/10 pb-3 sm:pb-4 shrink-0">
+        <h2 class="text-lg sm:text-xl font-bold text-white flex items-center gap-2">⚙️ ตั้งค่าระบบและข้อมูลงาน</h2>
+        <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-white text-2xl font-bold p-1">&times;</button>
+      </div>
+
+      <form id="settings-form" onsubmit="saveSettings(event)" class="space-y-4 overflow-y-auto pr-1 flex-1">
+        <div class="border-b border-white/10 pb-4 space-y-3">
+          <h3 class="text-xs font-semibold text-emerald-400">🖼️ โลโก้ภาพ (ฝั่งซ้ายมือ)</h3>
+          <div>
+            <label class="block text-xs text-slate-300 mb-1">วาง URL ลิงก์รูปภาพโลโก้</label>
+            <input type="url" id="cfg-logo-url" placeholder="https://example.com/logo.jpg" class="w-full bg-slate-900/80 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-400 text-sm mb-2">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-300 mb-1">หรือ อัปโหลดไฟล์รูปโลโก้ใหม่</label>
+            <input type="file" id="cfg-logo-file" accept="image/*" class="w-full bg-slate-900/80 border border-white/10 rounded-lg px-3 py-1.5 text-white focus:outline-none focus:border-emerald-400 text-xs file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:bg-emerald-500 file:text-white hover:file:bg-emerald-600">
+          </div>
+          <span class="text-[10px] text-slate-400 block">*หากไม่ต้องการเปลี่ยนรูป ให้เว้นว่างไว้</span>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">ชื่องาน / กิจกรรม</label>
+          <input type="text" id="cfg-event-name" required class="w-full bg-slate-900/80 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-400 text-sm">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">สถานที่จัดงาน</label>
+          <input type="text" id="cfg-location" required class="w-full bg-slate-900/80 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-400 text-sm">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">ยอดเป้าหมาย (บาท)</label>
+            <input type="text" id="cfg-goal" required oninput="formatInputWithComma(this)" class="w-full bg-slate-900/80 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-400 text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">รอบเวลาอัปเดต (วินาที)</label>
+            <input type="number" id="cfg-interval" value="5" min="1" class="w-full bg-slate-900/80 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-400 text-sm">
+          </div>
+        </div>
+
+        <div class="border-t border-white/10 pt-4 space-y-3">
+          <h3 class="text-sm font-semibold text-emerald-400">ข้อมูลบัญชีบริจาค</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">ชื่อธนาคาร</label>
+              <input type="text" id="cfg-bank-name" class="w-full bg-slate-900/80 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-400 text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">ชื่อบัญชี</label>
+              <input type="text" id="cfg-account-name" class="w-full bg-slate-900/80 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-400 text-sm">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">เลขที่บัญชี</label>
+            <input type="text" id="cfg-account-no" class="w-full bg-slate-900/80 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-400 text-sm">
+          </div>
+          
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">อัปโหลดรูป QR Code บริจาคใหม่</label>
+            <input type="file" id="cfg-qr-file" accept="image/*" class="w-full bg-slate-900/80 border border-white/10 rounded-lg px-3 py-1.5 text-white focus:outline-none focus:border-emerald-400 text-xs file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:bg-emerald-500 file:text-white hover:file:bg-emerald-600">
+            <span class="text-[10px] text-slate-400">*หากไม่ต้องการเปลี่ยนรูปภาพ ไม่ต้องเลือกไฟล์</span>
+          </div>
+        </div>
+
+        <div class="border-t border-white/10 pt-4">
+          <label class="block text-xs font-semibold text-slate-300 mb-1">ข้อความประกาศวิ่งด้านล่าง</label>
+          <textarea id="cfg-ticker-text" rows="2" class="w-full bg-slate-900/80 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-400 text-sm"></textarea>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-4 border-t border-white/10 shrink-0">
+          <button type="button" onclick="closeSettingsModal()" class="px-4 py-2 rounded-lg text-slate-300 hover:bg-white/5 text-sm">ยกเลิก</button>
+          <button type="submit" id="btn-save-settings" class="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2 rounded-lg font-semibold text-sm transition shadow-lg">บันทึกการตั้งค่า</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal บริจาคเงิน / แก้ไขยอดสะสม -->
+  <div id="donate-modal" class="fixed inset-0 bg-black/75 backdrop-blur-md hidden items-center justify-center z-50 p-3 sm:p-4">
+    <div class="bg-slate-800 border border-white/10 rounded-2xl w-full max-w-md p-5 sm:p-6 shadow-2xl relative space-y-4 max-h-[90vh] flex flex-col">
+      <div class="flex justify-between items-center border-b border-white/10 pb-3 shrink-0">
+        <h2 class="text-lg sm:text-xl font-bold text-white flex items-center gap-2">💸 บันทึก / แก้ไขยอดบริจาค</h2>
+        <button onclick="closeDonateModal()" class="text-slate-400 hover:text-white text-2xl font-bold p-1">&times;</button>
+      </div>
+
+      <form id="donate-form" onsubmit="submitDonation(event)" class="space-y-4 overflow-y-auto pr-1 flex-1">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">เลือกประเภทการทำงาน</label>
+          <div class="grid grid-cols-3 gap-2">
+            <label class="flex flex-col items-center justify-center p-2 bg-slate-900/80 border border-white/10 rounded-lg cursor-pointer hover:border-emerald-400 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-500/10">
+              <input type="radio" name="action-type" value="add" checked onchange="handleActionTypeChange()" class="accent-emerald-500 mb-1">
+              <span class="text-xs font-medium text-emerald-400">➕ เพิ่มยอด</span>
+            </label>
+            <label class="flex flex-col items-center justify-center p-2 bg-slate-900/80 border border-white/10 rounded-lg cursor-pointer hover:border-rose-400 has-[:checked]:border-rose-500 has-[:checked]:bg-rose-500/10">
+              <input type="radio" name="action-type" value="subtract" onchange="handleActionTypeChange()" class="accent-rose-500 mb-1">
+              <span class="text-xs font-medium text-rose-400">➖ ลดยอด</span>
+            </label>
+            <label class="flex flex-col items-center justify-center p-2 bg-slate-900/80 border border-white/10 rounded-lg cursor-pointer hover:border-amber-400 has-[:checked]:border-amber-500 has-[:checked]:bg-amber-500/10">
+              <input type="radio" name="action-type" value="set" onchange="handleActionTypeChange()" class="accent-amber-500 mb-1">
+              <span class="text-xs font-medium text-amber-400">✏️ ตั้งยอดใหม่</span>
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label id="amount-label" class="block text-xs font-semibold text-slate-300 mb-1">จำนวนเงิน (บาท)</label>
+          <input type="text" id="donor-amount" required oninput="formatInputWithComma(this)" placeholder="1,000" class="w-full bg-slate-900/80 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-400 text-sm">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">หมายเหตุ / เหตุผลการแก้ไข</label>
+          <input type="text" id="donor-note" placeholder="เช่น บริจาคเพื่อการศึกษา หรือ ปรับแก้ไขยอดบริจาค" class="w-full bg-slate-900/80 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-400 text-sm">
+        </div>
+
+        <div class="flex justify-end gap-3 pt-4 border-t border-white/10 shrink-0">
+          <button type="button" onclick="closeDonateModal()" class="px-4 py-2 rounded-lg text-slate-300 hover:bg-white/5 text-sm">ยกเลิก</button>
+          <button type="submit" id="btn-submit-donate" class="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2 rounded-lg font-semibold text-sm transition shadow-lg flex items-center gap-2">
+            บันทึกข้อมูล
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Ticker Banner ด้านล่างสุด -->
+  <footer class="bg-black/70 backdrop-blur-md border-t border-white/10 py-2.5 sm:py-3 overflow-hidden whitespace-nowrap z-20 shrink-0">
+    <div id="display-ticker" class="animate-marquee text-lg sm:text-xl md:text-2xl text-slate-100 px-4 font-semibold tracking-wide">
+        ٱلسَّلَامُ عَلَيْكُمْ وَرَحْمَةُ ٱللَّٰهِ وَبَرَكَاتُهُ خیرات اونتوق ممباغون اسراما فلاجر فندق كلوغ اير / งานการกุศลสมทบทุน เพื่อต่อเติมอาคารหอพักนักเรียน (ปอเนาะคลองน้ำ)
+    </div>
+  </footer>
+
+  <script>
+    let currentGoal = 1500000;
+    let currentTotalDonation = 0;
+    let animatedTotal = 0;
+    let refreshIntervalSec = 5;
+    let autoRefreshTimer = null;
+    let isTTSEnabled = true;
+    let isFirstLoad = true;
+
+    // เริ่มทำงานระบบเมื่อโหลดหน้าเว็บ
+    window.addEventListener('DOMContentLoaded', () => {
+      loadSavedSettings();
+      updateClock();
+      setInterval(updateClock, 1000);
+      fetchSheetData();
+      resetAutoRefreshTimer();
+    });
+
+    function resetAutoRefreshTimer() {
+      if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+      autoRefreshTimer = setInterval(fetchSheetData, refreshIntervalSec * 1000);
+    }
+
+    // ฟังก์ชันปรับเวลา Realtime
+    function updateClock() {
+      const now = new Date();
+      const h = String(now.getHours()).padStart(2, '0');
+      const m = String(now.getMinutes()).padStart(2, '0');
+      const s = String(now.getSeconds()).padStart(2, '0');
+      
+      document.getElementById('clock').innerHTML = 
+        `<span class="clock-digit">${h[0]}</span><span class="clock-digit">${h[1]}</span>` +
+        `<span class="clock-colon">:</span>` +
+        `<span class="clock-digit">${m[0]}</span><span class="clock-digit">${m[1]}</span>` +
+        `<span class="clock-colon">:</span>` +
+        `<span class="clock-digit">${s[0]}</span><span class="clock-digit">${s[1]}</span>`;
+
+      const thaiMonths = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+      const dateStr = `📅 วันที่ ${now.getDate()} ${thaiMonths[now.getMonth()]} ${now.getFullYear() + 543}`;
+      document.getElementById('current-date').innerText = dateStr;
+    }
+
+    // โหลดการตั้งค่าจาก localStorage
+    function loadSavedSettings() {
+      const savedConfig = JSON.parse(localStorage.getItem('charity_dashboard_config'));
+      if (!savedConfig) return;
+
+      if (savedConfig.eventName) document.getElementById('display-event-name').innerText = savedConfig.eventName;
+      if (savedConfig.location) document.getElementById('display-location').innerText = savedConfig.location;
+      if (savedConfig.goal) {
+        currentGoal = savedConfig.goal;
+        document.getElementById('display-goal').innerText = formatNumber(currentGoal) + ' ฿';
+      }
+      if (savedConfig.bankName) document.getElementById('display-bank-name').innerText = savedConfig.bankName;
+      if (savedConfig.accountName) document.getElementById('display-account-name').innerText = savedConfig.accountName;
+      if (savedConfig.accountNo) document.getElementById('display-account-no').innerText = savedConfig.accountNo;
+      if (savedConfig.tickerText) document.getElementById('display-ticker').innerText = savedConfig.tickerText;
+      if (savedConfig.logoSrc) document.getElementById('display-logo').src = savedConfig.logoSrc;
+      if (savedConfig.qrSrc) document.getElementById('display-qr-code').src = savedConfig.qrSrc;
+      if (savedConfig.interval) refreshIntervalSec = savedConfig.interval;
+    }
+
+    function toggleTTS() {
+      isTTSEnabled = !isTTSEnabled;
+      const btn = document.getElementById('tts-toggle');
+      if (isTTSEnabled) {
+        btn.innerText = "🔊 เสียงอ่าน 2 ภาษา (TH / ID): เปิด";
+        btn.className = "px-3 md:px-3.5 py-1.5 rounded-full text-xs md:text-sm font-semibold transition flex items-center gap-1.5 bg-emerald-500 text-white shadow";
+        speakBilingualDonation(currentTotalDonation);
+      } else {
+        btn.innerText = "🔇 เสียงอ่าน 2 ภาษา: ปิด";
+        btn.className = "px-3 md:px-3.5 py-1.5 rounded-full text-xs md:text-sm font-semibold transition flex items-center gap-1.5 bg-rose-500/80 text-white shadow";
+        window.speechSynthesis.cancel();
+      }
+    }
+
+    function triggerReadDonation() {
+      if (!isTTSEnabled) {
+        toggleTTS();
+      } else {
+        speakBilingualDonation(currentTotalDonation);
+      }
+    }
+
+    function speakBilingualDonation(amount) {
+      if (!isTTSEnabled || !('speechSynthesis' in window)) return;
+
+      window.speechSynthesis.cancel();
+
+      const numThai = amount.toLocaleString('th-TH');
+      const numIndo = amount.toLocaleString('id-ID');
+
+      const textThai = `ยอดบริจาคสะสมล่าสุด ${numThai} บาท`;
+      const utteranceThai = new SpeechSynthesisUtterance(textThai);
+      utteranceThai.lang = 'th-TH';
+      utteranceThai.rate = 0.95;
+
+      const textIndo = `Total donasi saat ini, ${numIndo} baht. Pondok Klong air Terima kasih kepada semua para dermawan.`;
+      const utteranceIndo = new SpeechSynthesisUtterance(textIndo);
+      utteranceIndo.lang = 'id-ID';
+      utteranceIndo.rate = 0.95;
+
+      utteranceThai.onend = function() {
+        if (isTTSEnabled) {
+          window.speechSynthesis.speak(utteranceIndo);
+        }
+      };
+
+      window.speechSynthesis.speak(utteranceThai);
+    }
+
+    function formatNumber(num) {
+      if (isNaN(num) || num === null || num === undefined) return "0";
+      return Number(num).toLocaleString('th-TH');
+    }
+
+    function parseRawNumber(valStr) {
+      if (!valStr) return 0;
+      return parseFloat(valStr.toString().replace(/,/g, '')) || 0;
+    }
+
+    function formatInputWithComma(input) {
+      let value = input.value.replace(/[^0-9.]/g, '');
+      const parts = value.split('.');
+      if (parts.length > 2) {
+        value = parts[0] + '.' + parts.slice(1).join('');
+      }
+      if (parts[0]) {
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      }
+      input.value = parts.join('.');
+    }
+
+    function animateNumber(targetNum, duration = 1800) {
+      const startNum = animatedTotal;
+      const startTime = performance.now();
+
+      function update(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        const easeOutProgress = 1 - Math.pow(1 - progress, 3);
+        const currentVal = Math.floor(startNum + (targetNum - startNum) * easeOutProgress);
+        
+        document.getElementById('donation-total').innerText = formatNumber(currentVal);
+        
+        if (progress < 1) {
+          requestAnimationFrame(update);
+        } else {
+          animatedTotal = targetNum;
+          document.getElementById('donation-total').innerText = formatNumber(targetNum);
+        }
+      }
+
+      requestAnimationFrame(update);
+    }
+
+    function fetchSheetData() {
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(onDataLoaded)
+          .withFailureHandler(err => console.error("Fetch Error:", err))
+          .getDonationData();
+      } else {
+        onDataLoaded({ total: currentTotalDonation || 450000 });
+      }
+    }
+
+    function onDataLoaded(data) {
+      const newTotal = data.total || 0;
+      
+      if (!isFirstLoad && newTotal !== currentTotalDonation) {
+        speakBilingualDonation(newTotal);
+      }
+      isFirstLoad = false;
+
+      animateNumber(newTotal, 1800);
+      currentTotalDonation = newTotal;
+      updateProgress(currentTotalDonation, currentGoal);
+    }
+
+    function updateProgress(total, goal) {
+      let percent = 0;
+      if (goal > 0) {
+        percent = Math.min(Math.round((total / goal) * 100), 100);
+      }
+      document.getElementById('progress-bar').style.width = percent + '%';
+      document.getElementById('progress-percent').innerText = percent + '%';
+      document.getElementById('display-goal').innerText = formatNumber(goal) + ' ฿';
+    }
+
+    function openDonateModal() {
+      document.getElementById('donate-form').reset();
+      handleActionTypeChange();
+      const modal = document.getElementById('donate-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeDonateModal() {
+      const modal = document.getElementById('donate-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function handleActionTypeChange() {
+      const actionType = document.querySelector('input[name="action-type"]:checked').value;
+      const amountInput = document.getElementById('donor-amount');
+      const label = document.getElementById('amount-label');
+
+      if (actionType === 'add') {
+        label.innerText = 'จำนวนเงินที่บริจาคเพิ่ม (บาท)';
+        amountInput.value = '';
+        amountInput.placeholder = '1,000';
+      } else if (actionType === 'subtract') {
+        label.innerText = 'จำนวนเงินที่ต้องการปรับลด (บาท)';
+        amountInput.value = '';
+        amountInput.placeholder = '500';
+      } else if (actionType === 'set') {
+        label.innerText = 'ระบุยอดบริจาคสะสมรวมใหม่ (บาท)';
+        amountInput.value = formatNumber(currentTotalDonation);
+        amountInput.placeholder = '0';
+      }
+    }
+
+    function submitDonation(event) {
+      event.preventDefault();
+      const btn = document.getElementById('btn-submit-donate');
+      btn.disabled = true;
+      btn.innerText = "กำลังบันทึก...";
+
+      const actionType = document.querySelector('input[name="action-type"]:checked').value;
+      let rawAmount = parseRawNumber(document.getElementById('donor-amount').value);
+      let finalAmount = 0;
+      let notePrefix = "";
+
+      if (actionType === 'add') {
+        finalAmount = Math.abs(rawAmount);
+        notePrefix = "";
+      } else if (actionType === 'subtract') {
+        finalAmount = -Math.abs(rawAmount);
+        notePrefix = "[ปรับลดยอด] ";
+      } else if (actionType === 'set') {
+        finalAmount = rawAmount - currentTotalDonation;
+        notePrefix = "[ตั้งยอดสะสมใหม่เป็น " + formatNumber(rawAmount) + "] ";
+      }
+
+      const donorData = {
+        name: actionType === 'add' ? "ผู้ไม่ประสงค์ออกนาม" : "ปรับปรุงระบบยอดบริจาค",
+        amount: finalAmount,
+        note: notePrefix + document.getElementById('donor-note').value
+      };
+
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(res => {
+            btn.disabled = false;
+            btn.innerText = "บันทึกข้อมูล";
+            closeDonateModal();
+            fetchSheetData();
+          })
+          .withFailureHandler(err => {
+            alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล: " + err);
+            btn.disabled = false;
+            btn.innerText = "บันทึกข้อมูล";
+          })
+          .addDonation(donorData);
+      } else {
+        currentTotalDonation += finalAmount;
+        speakBilingualDonation(currentTotalDonation);
+        animateNumber(currentTotalDonation, 1200);
+        updateProgress(currentTotalDonation, currentGoal);
+        btn.disabled = false;
+        btn.innerText = "บันทึกข้อมูล";
+        closeDonateModal();
+      }
+    }
+
+    function openSettingsModal() {
+      document.getElementById('cfg-event-name').value = document.getElementById('display-event-name').innerText;
+      document.getElementById('cfg-location').value = document.getElementById('display-location').innerText;
+      document.getElementById('cfg-goal').value = formatNumber(currentGoal);
+      document.getElementById('cfg-bank-name').value = document.getElementById('display-bank-name').innerText;
+      document.getElementById('cfg-account-name').value = document.getElementById('display-account-name').innerText;
+      document.getElementById('cfg-account-no').value = document.getElementById('display-account-no').innerText;
+      document.getElementById('cfg-ticker-text').value = document.getElementById('display-ticker').innerText.trim();
+      document.getElementById('cfg-interval').value = refreshIntervalSec;
+      document.getElementById('cfg-logo-url').value = '';
+      document.getElementById('cfg-qr-file').value = '';
+      document.getElementById('cfg-logo-file').value = '';
+
+      const modal = document.getElementById('settings-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeSettingsModal() {
+      const modal = document.getElementById('settings-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function readFileAsBase64(file) {
+      return new Promise((resolve, reject) => {
+        if (!file) return resolve(null);
+        const reader = new FileReader();
+        reader.onload = e => resolve(e.target.result);
+        reader.onerror = err => reject(err);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function saveSettings(event) {
+      event.preventDefault();
+      const btnSave = document.getElementById('btn-save-settings');
+      btnSave.disabled = true;
+      btnSave.innerText = "กำลังบันทึก...";
+
+      try {
+        const eventName = document.getElementById('cfg-event-name').value;
+        const location = document.getElementById('cfg-location').value;
+        currentGoal = parseRawNumber(document.getElementById('cfg-goal').value);
+        const bankName = document.getElementById('cfg-bank-name').value;
+        const accountName = document.getElementById('cfg-account-name').value;
+        const accountNo = document.getElementById('cfg-account-no').value;
+        const tickerText = document.getElementById('cfg-ticker-text').value;
+        refreshIntervalSec = parseInt(document.getElementById('cfg-interval').value, 10) || 5;
+
+        // อัปเดตข้อมูลบนหน้าจอ
+        if (eventName) document.getElementById('display-event-name').innerText = eventName;
+        if (location) document.getElementById('display-location').innerText = location;
+        if (bankName) document.getElementById('display-bank-name').innerText = bankName;
+        if (accountName) document.getElementById('display-account-name').innerText = accountName;
+        if (accountNo) document.getElementById('display-account-no').innerText = accountNo;
+        if (tickerText) document.getElementById('display-ticker').innerText = tickerText;
+
+        // จัดการรูปภาพโลโก้
+        const logoUrlInput = document.getElementById('cfg-logo-url').value.trim();
+        const logoFile = document.getElementById('cfg-logo-file').files[0];
+        let logoSrc = document.getElementById('display-logo').src;
+
+        if (logoUrlInput) {
+          logoSrc = logoUrlInput;
+        } else if (logoFile) {
+          logoSrc = await readFileAsBase64(logoFile);
+        }
+        document.getElementById('display-logo').src = logoSrc;
+
+        // จัดการรูปภาพ QR Code
+        const qrFile = document.getElementById('cfg-qr-file').files[0];
+        let qrSrc = document.getElementById('display-qr-code').src;
+        if (qrFile) {
+          qrSrc = await readFileAsBase64(qrFile);
+        }
+        document.getElementById('display-qr-code').src = qrSrc;
+
+        // บันทึกลง localStorage
+        const configToSave = {
+          eventName,
+          location,
+          goal: currentGoal,
+          bankName,
+          accountName,
+          accountNo,
+          tickerText,
+          logoSrc,
+          qrSrc,
+          interval: refreshIntervalSec
+        };
+        localStorage.setItem('charity_dashboard_config', JSON.stringify(configToSave));
+
+        // อัปเดตหลอดความคืบหน้าและรีเซ็ตเวลาดึงข้อมูล
+        updateProgress(currentTotalDonation, currentGoal);
+        resetAutoRefreshTimer();
+
+        closeSettingsModal();
+      } catch (err) {
+        alert("เกิดข้อผิดพลาดในการบันทึกการตั้งค่า: " + err.message);
+      } finally {
+        btnSave.disabled = false;
+        btnSave.innerText = "บันทึกการตั้งค่า";
+      }
+    }
+  </script>
 </body>
 </html>
