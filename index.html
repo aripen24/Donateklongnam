@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบแสดงยอดบริจาคงานการกุศลปอเนาะคลองน้ำ</title>
+  <title>ระบบแสดงยอดบริจาคปอเนาะคลองน้ำ</title>
   <!-- Tailwind CSS & Google Fonts (Kanit) -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
@@ -88,19 +88,16 @@
     </div>
   </header>
 
-  <!-- Layout หลัก (Responsive: Grid 1 คอลัมน์บนมือถือ/แท็บเล็ต, 4 คอลัมน์บนเดสก์ท็อป) -->
+  <!-- Layout หลัก -->
   <main class="flex-1 p-4 md:p-6 grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6 items-stretch overflow-y-auto lg:overflow-hidden">
     
-    <!-- ช่องที่ 1 (ซ้ายมือบน Desktop / บนสุดบน Mobile) -->
+    <!-- ช่องที่ 1 (โลโก้ + รายละเอียดงาน + นาฬิกา) -->
     <div class="bg-slate-800/40 border border-white/10 rounded-3xl backdrop-blur-md flex flex-col justify-between shadow-xl lg:col-span-1 overflow-hidden relative">
-      
-      <!-- Container โลโก้ชิดขอบบน Left/Right/Top -->
       <div class="w-full relative group bg-slate-950/40 border-b border-white/10">
         <img id="display-logo" src="https://i.postimg.cc/kX9vtX6n/Untitled-1-(2)-(1).png" alt="Logo" class="w-full h-36 sm:h-44 md:h-52 lg:h-56 object-cover object-center transition-transform duration-500 group-hover:scale-105">
         <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/20 to-transparent"></div>
       </div>
 
-      <!-- ส่วนเนื้อหาข้อความชื่องาน & สถานที่ -->
       <div class="px-5 py-3 md:px-6 md:py-2 flex-1 flex flex-col justify-center space-y-2">
         <h1 id="display-event-name" class="text-xl sm:text-2xl md:text-3xl font-extrabold text-white leading-tight">งานการกุศลปอเนาะคลองน้ำ</h1>
         <p class="text-xs sm:text-sm md:text-base text-slate-300 flex items-start sm:items-center gap-1.5">
@@ -108,7 +105,6 @@
         </p>
       </div>
 
-      <!-- ส่วนนาฬิกาแสดงเวลา (ตัวเลขสี Emerald) -->
       <div class="p-4 pt-0">
         <div class="relative p-0.5 rounded-2xl bg-gradient-to-r from-emerald-500/30 via-emerald-400/20 to-teal-500/30 shadow-lg">
           <div class="bg-slate-950/80 backdrop-blur-md p-3 sm:p-4 rounded-2xl border border-white/10 flex flex-col items-center justify-center text-center space-y-1.5 sm:space-y-2">
@@ -121,11 +117,10 @@
       </div>
     </div>
 
-    <!-- ช่องที่ 2 (กลาง - แสดงตัวเลขยอดบริจาค) -->
+    <!-- ช่องที่ 2 (แสดงตัวเลขยอดบริจาค) -->
     <div class="bg-slate-800/80 border border-white/10 rounded-3xl p-5 md:p-8 backdrop-blur-md text-center flex flex-col justify-between items-center shadow-2xl relative overflow-hidden lg:col-span-2 min-h-[280px] lg:min-h-0">
       <div class="absolute -top-16 -right-16 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
-      <!-- ข้อความหัวข้อ -->
       <p class="text-slate-300 tracking-widest text-lg sm:text-2xl md:text-3xl font-bold uppercase pt-1">ยอดบริจาคสะสมปัจจุบัน</p>
       
       <div class="my-auto w-full flex items-center justify-center overflow-hidden py-4 sm:py-2">
@@ -146,10 +141,9 @@
       </div>
     </div>
 
-    <!-- ช่องที่ 3 (ขวา - ช่องทางโอนเงินบริจาค) -->
+    <!-- ช่องที่ 3 (ช่องทางโอนเงินบริจาค) -->
     <div class="bg-slate-800/40 border border-white/10 rounded-3xl p-5 md:p-6 text-center backdrop-blur-md flex flex-col justify-between shadow-xl lg:col-span-1">
       <div class="space-y-2 sm:space-y-3 flex flex-col items-center w-full">
-        <!-- ปรับสีข้อความหัวข้อเป็น text-white (สีขาว) -->
         <p class="text-white text-base sm:text-lg md:text-xl font-extrabold uppercase tracking-wide mb-1 border-b border-white/20 pb-1 w-full text-center">
           ช่องทางโอนเงินบริจาค
         </p>
@@ -161,7 +155,6 @@
         <p id="display-bank-name" class="text-slate-200 text-base sm:text-lg md:text-xl font-bold">ธนาคารออมสิน</p>
         <p id="display-account-name" class="text-white text-lg sm:text-xl md:text-2xl font-black text-amber-300">เจะมารูดิน อิสมิง</p>
         
-        <!-- เลขบัญชี -->
         <div id="display-account-no" class="text-lg sm:text-xl md:text-3xl font-black text-emerald-400 font-sans-clean bg-slate-950/90 py-2 sm:py-2.5 px-4 sm:px-5 rounded-2xl border border-emerald-400/30 inline-block shadow-2xl tracking-wider w-full">
           020-4-2153701-8
         </div>
@@ -395,10 +388,52 @@
       }
     }
 
-    function speakBilingualDonation(amount) {
+    // ฟังก์ชันเล่นเสียง 4-Tone Airport Chime (C4 -> E4 -> G4 -> C5) ก่อนเริ่มอ่านเสียง
+    function playPAChime() {
+      return new Promise((resolve) => {
+        try {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContext) return resolve();
+          
+          const audioCtx = new AudioContext();
+          const notes = [261.63, 329.63, 392.00, 523.25]; // โน้ต C4, E4, G4, C5 (Airport Chime)
+          const duration = 0.35; // ความยาวแต่ละโน้ต (วินาที)
+
+          notes.forEach((freq, index) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            
+            const startTime = audioCtx.currentTime + (index * duration);
+            
+            gain.gain.setValueAtTime(0.3, startTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration + 0.3);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start(startTime);
+            osc.stop(startTime + duration + 0.3);
+          });
+
+          // หน่วงเวลาให้โน้ตทั้ง 4 ตัวเล่นจบสมบูรณ์ก่อนปล่อยให้อ่านเสียง
+          setTimeout(resolve, (notes.length * duration + 0.4) * 1000);
+        } catch (e) {
+          console.error("Audio Context Error:", e);
+          resolve();
+        }
+      });
+    }
+
+    async function speakBilingualDonation(amount) {
       if (!isTTSEnabled || !('speechSynthesis' in window)) return;
 
       window.speechSynthesis.cancel();
+
+      // เล่นเสียง 4-Tone Chime ก่อนเริ่มอ่าน
+      await playPAChime();
 
       const numThai = amount.toLocaleString('th-TH');
       const numIndo = amount.toLocaleString('id-ID');
@@ -613,85 +648,79 @@
       modal.classList.remove('flex');
     }
 
-    function readFileAsBase64(file) {
-      return new Promise((resolve, reject) => {
-        if (!file) return resolve(null);
-        const reader = new FileReader();
-        reader.onload = e => resolve(e.target.result);
-        reader.onerror = err => reject(err);
-        reader.readAsDataURL(file);
-      });
-    }
-
-    async function saveSettings(event) {
+    function saveSettings(event) {
       event.preventDefault();
-      const btnSave = document.getElementById('btn-save-settings');
-      btnSave.disabled = true;
-      btnSave.innerText = "กำลังบันทึก...";
+      
+      const eventName = document.getElementById('cfg-event-name').value;
+      const location = document.getElementById('cfg-location').value;
+      const goal = parseRawNumber(document.getElementById('cfg-goal').value);
+      const bankName = document.getElementById('cfg-bank-name').value;
+      const accountName = document.getElementById('cfg-account-name').value;
+      const accountNo = document.getElementById('cfg-account-no').value;
+      const tickerText = document.getElementById('cfg-ticker-text').value;
+      const interval = parseInt(document.getElementById('cfg-interval').value) || 5;
 
-      try {
-        const eventName = document.getElementById('cfg-event-name').value;
-        const location = document.getElementById('cfg-location').value;
-        currentGoal = parseRawNumber(document.getElementById('cfg-goal').value);
-        const bankName = document.getElementById('cfg-bank-name').value;
-        const accountName = document.getElementById('cfg-account-name').value;
-        const accountNo = document.getElementById('cfg-account-no').value;
-        const tickerText = document.getElementById('cfg-ticker-text').value;
-        refreshIntervalSec = parseInt(document.getElementById('cfg-interval').value, 10) || 5;
+      const logoUrl = document.getElementById('cfg-logo-url').value;
+      const logoFile = document.getElementById('cfg-logo-file').files[0];
+      const qrFile = document.getElementById('cfg-qr-file').files[0];
 
-        // อัปเดตข้อมูลบนหน้าจอ
-        if (eventName) document.getElementById('display-event-name').innerText = eventName;
-        if (location) document.getElementById('display-location').innerText = location;
-        if (bankName) document.getElementById('display-bank-name').innerText = bankName;
-        if (accountName) document.getElementById('display-account-name').innerText = accountName;
-        if (accountNo) document.getElementById('display-account-no').innerText = accountNo;
-        if (tickerText) document.getElementById('display-ticker').innerText = tickerText;
-
-        // จัดการรูปภาพโลโก้
-        const logoUrlInput = document.getElementById('cfg-logo-url').value.trim();
-        const logoFile = document.getElementById('cfg-logo-file').files[0];
-        let logoSrc = document.getElementById('display-logo').src;
-
-        if (logoUrlInput) {
-          logoSrc = logoUrlInput;
-        } else if (logoFile) {
-          logoSrc = await readFileAsBase64(logoFile);
-        }
-        document.getElementById('display-logo').src = logoSrc;
-
-        // จัดการรูปภาพ QR Code
-        const qrFile = document.getElementById('cfg-qr-file').files[0];
-        let qrSrc = document.getElementById('display-qr-code').src;
-        if (qrFile) {
-          qrSrc = await readFileAsBase64(qrFile);
-        }
-        document.getElementById('display-qr-code').src = qrSrc;
-
-        // บันทึกลง localStorage
-        const configToSave = {
-          eventName,
-          location,
-          goal: currentGoal,
-          bankName,
-          accountName,
-          accountNo,
-          tickerText,
-          logoSrc,
-          qrSrc,
-          interval: refreshIntervalSec
-        };
-        localStorage.setItem('charity_dashboard_config', JSON.stringify(configToSave));
-
-        // อัปเดตหลอดความคืบหน้าและรีเซ็ตเวลาดึงข้อมูล
+      if (eventName) document.getElementById('display-event-name').innerText = eventName;
+      if (location) document.getElementById('display-location').innerText = location;
+      if (goal > 0) {
+        currentGoal = goal;
         updateProgress(currentTotalDonation, currentGoal);
-        resetAutoRefreshTimer();
+      }
+      if (bankName) document.getElementById('display-bank-name').innerText = bankName;
+      if (accountName) document.getElementById('display-account-name').innerText = accountName;
+      if (accountNo) document.getElementById('display-account-no').innerText = accountNo;
+      if (tickerText) document.getElementById('display-ticker').innerText = tickerText;
 
+      refreshIntervalSec = interval;
+      resetAutoRefreshTimer();
+
+      let logoSrc = document.getElementById('display-logo').src;
+      let qrSrc = document.getElementById('display-qr-code').src;
+
+      const updateAndSave = () => {
+        const config = {
+          eventName, location, goal: currentGoal, bankName, accountName, 
+          accountNo, tickerText, interval: refreshIntervalSec, logoSrc, qrSrc
+        };
+        localStorage.setItem('charity_dashboard_config', JSON.stringify(config));
         closeSettingsModal();
-      } catch (err) {
-        alert("เกิดข้อผิดพลาดในการบันทึกการตั้งค่า: " + err.message);
-      } finally {
-        btnSave.disabled = false;
-        btnSave.innerText = "บันทึกการตั้งค่า";
+      };
+
+      let pendingReads = 0;
+
+      if (logoFile) {
+        pendingReads++;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          logoSrc = e.target.result;
+          document.getElementById('display-logo').src = logoSrc;
+          pendingReads--;
+          if (pendingReads === 0) updateAndSave();
+        };
+        reader.readAsDataURL(logoFile);
+      } else if (logoUrl) {
+        logoSrc = logoUrl;
+        document.getElementById('display-logo').src = logoSrc;
+      }
+
+      if (qrFile) {
+        pendingReads++;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          qrSrc = e.target.result;
+          document.getElementById('display-qr-code').src = qrSrc;
+          pendingReads--;
+          if (pendingReads === 0) updateAndSave();
+        };
+        reader.readAsDataURL(qrFile);
+      }
+
+      if (pendingReads === 0) {
+        updateAndSave();
       }
     }
   </script>
