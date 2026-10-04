@@ -1,50 +1,1623 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="th" class="light">
 <head>
-    <base target="_top">
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <!-- ป้องกันการย่อ/ขยายหน้าจอบนมือถือ -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ระบบแสดงยอดบริจาคปอเนาะคลองน้ำ</title>
-    <style>
-        /* ลบ Margin และ Padding ทั้งหมด */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-        /* ตั้งค่า HTML และ Body ให้เต็มหน้าจอแบบคงที่ ไม่เกิดการ Scroll */
-        html, body {
-            width: 100%;
-            height: 100%;
-            height: 100vh;
-            height: 100dvh; /* ปรับตามความสูงจริงบนมือถือ รวมแถบ URL */
-            overflow: hidden;
-            background-color: #ffffff;
-            position: fixed; /* ล็อกตำแหน่งไม่ให้หน้าจอเด้งหรือไถลบน iOS */
-            top: 0;
-            left: 0;
-        }
+  <title>ระบบแสดงยอดบริจาคปอเนาะคลองน้ำ</title>
 
-        /* iframe แสดงผลเต็มพื้นที่ 100% โดยไม่มีขอบ */
-        .full-screen-iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-            display: block;
-        }
-    </style>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+    }
+  </script>
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet"
+  >
+
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+  >
+
+  <style>
+    body {
+      font-family: 'Kanit', sans-serif;
+    }
+
+    @keyframes marquee {
+      0% {
+        transform: translateX(100%);
+      }
+      100% {
+        transform: translateX(-100%);
+      }
+    }
+
+    .animate-marquee {
+      display: inline-block;
+      white-space: nowrap;
+      animation:
+        marquee var(--ticker-speed, 30s)
+        linear infinite;
+    }
+
+    .animate-marquee:hover {
+      animation-play-state: paused;
+    }
+
+    /* ------------------------------------------
+       Animation ยอดเงิน
+    ------------------------------------------ */
+    @keyframes pulseGlow {
+      0% {
+        transform: scale(1);
+        opacity: 1;
+        text-shadow: 0 0 0px rgba(255,255,255,0);
+      }
+      25% {
+        transform: scale(1.08);
+        opacity: 0.3;
+        color: #a7f3d0;
+        text-shadow: 0 0 20px rgba(255,255,255,0.8);
+      }
+      50% {
+        transform: scale(1);
+        opacity: 1;
+        text-shadow: 0 0 10px rgba(255,255,255,0.5);
+      }
+      75% {
+        transform: scale(1.08);
+        opacity: 0.3;
+        color: #a7f3d0;
+        text-shadow: 0 0 20px rgba(255,255,255,0.8);
+      }
+      100% {
+        transform: scale(1);
+        opacity: 1;
+        text-shadow: 0 0 0px rgba(255,255,255,0);
+      }
+    }
+
+    .animate-number-update {
+      animation: pulseGlow 1.2s ease-in-out;
+      display: inline-block;
+    }
+
+    /* ------------------------------------------
+       Loading
+    ------------------------------------------ */
+    .loading-spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255,255,255,0.35);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* ------------------------------------------
+       Toast
+    ------------------------------------------ */
+    .toast {
+      transform: translateY(20px);
+      opacity: 0;
+      pointer-events: none;
+      transition: all .25s ease;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  </style>
+
 </head>
-<body>
 
-    <iframe 
-        class="full-screen-iframe"
-        src="https://script.google.com/macros/s/AKfycbyh9oKJJUFojdoUabKhq495pCf9HGR7HxjFdR8ZvJgVWR3w5ZH6cnwxWYmKpsXm0AIHQQ/exec"
-        allow="geolocation; microphone; camera; clipboard-write;"
-        scrolling="yes">
-    </iframe>
+<body
+  class="
+    bg-slate-100
+    dark:bg-slate-900
+    text-slate-800
+    dark:text-slate-100
+    min-h-screen
+    flex
+    flex-col
+    justify-between
+    selection:bg-emerald-500
+    selection:text-white
+    transition-colors
+    duration-300
+  "
+>
+
+<!-- =========================================================
+     Main
+========================================================= -->
+
+<main
+  class="
+    max-w-4xl
+    w-full
+    mx-auto
+    p-4
+    sm:p-6
+    flex-grow
+    flex
+    flex-col
+    justify-center
+    space-y-6
+  "
+>
+
+  <!-- =======================================================
+       Header
+  ======================================================== -->
+
+  <header
+    class="
+      text-center
+      bg-white
+      dark:bg-slate-800
+      p-6
+      sm:p-8
+      rounded-3xl
+      shadow-sm
+      border
+      border-slate-200/80
+      dark:border-slate-700
+      relative
+      overflow-hidden
+      transition-colors
+      duration-300
+    "
+  >
+
+    <div
+      class="
+        absolute
+        top-0
+        left-0
+        w-full
+        h-2
+        bg-gradient-to-r
+        from-emerald-500
+        via-teal-500
+        to-emerald-600
+      "
+    ></div>
+
+    <!-- ปุ่มสลับธีม สว่าง / มืด -->
+    <button
+      onclick="toggleTheme()"
+      aria-label="Toggle Theme"
+      class="
+        absolute
+        top-4
+        right-4
+        w-10
+        h-10
+        rounded-2xl
+        bg-slate-100
+        dark:bg-slate-700
+        text-slate-600
+        dark:text-amber-400
+        hover:bg-slate-200
+        dark:hover:bg-slate-600
+        flex
+        items-center
+        justify-center
+        transition-all
+        duration-200
+        shadow-sm
+      "
+    >
+      <i id="themeIcon" class="fa-solid fa-moon text-lg"></i>
+    </button>
+
+    <div
+      class="
+        inline-flex
+        items-center
+        space-x-2
+        px-3
+        py-1
+        bg-emerald-50
+        dark:bg-emerald-950/50
+        text-emerald-700
+        dark:text-emerald-300
+        rounded-full
+        text-xs
+        font-semibold
+        mb-3
+      "
+    >
+      <i class="fa-solid fa-mosque"></i>
+      <span>
+        ชมรมศิษย์เก่าปอเนาะคลองน้ำ
+      </span>
+    </div>
+
+    <h1
+      class="
+        text-2xl
+        sm:text-4xl
+        font-bold
+        tracking-tight
+        text-slate-900
+        dark:text-white
+      "
+    >
+      รวมน้ำใจศิษย์เก่าสู่ปอเนาะคลองน้ำ
+    </h1>
+
+    <p
+      class="
+        text-xs
+        sm:text-sm
+        text-slate-500
+        dark:text-slate-400
+        max-w-md
+        mx-auto
+        mt-2
+        leading-relaxed
+      "
+    >
+      ร่วมสมทบทุนเพื่อต่อเติมอาคารหอพักนักเรียนตลอดจนสิ่งจําเป็นอื่นๆ
+    </p>
+
+  </header>
+
+  <!-- =======================================================
+       Donation + Bank
+  ======================================================== -->
+
+  <div
+    class="
+      grid
+      grid-cols-1
+      md:grid-cols-3
+      gap-5
+    "
+  >
+
+    <!-- =====================================================
+         Donation
+    ====================================================== -->
+
+    <section
+      aria-labelledby="donation-summary-title"
+      class="
+        md:col-span-2
+        bg-gradient-to-br
+        from-emerald-600
+        via-emerald-700
+        to-teal-800
+        text-white
+        p-6
+        sm:p-8
+        rounded-3xl
+        shadow-md
+        flex
+        flex-col
+        justify-between
+        relative
+        overflow-hidden
+      "
+    >
+
+      <div
+        class="
+          absolute
+          -right-8
+          -bottom-8
+          w-36
+          h-36
+          bg-white/10
+          rounded-full
+          blur-2xl
+          pointer-events-none
+        "
+      ></div>
+
+      <div>
+        <!-- Header -->
+        <div
+          class="
+            flex
+            items-center
+            justify-between
+            gap-2
+          "
+        >
+          <h2
+            id="donation-summary-title"
+            class="
+              text-xs
+              font-semibold
+              tracking-wider
+              uppercase
+              text-emerald-200
+            "
+          >
+            ยอดบริจาครวมทั้งหมด
+          </h2>
+
+          <button
+            onclick="openAdminModal()"
+            class="
+              px-3
+              py-1.5
+              bg-white/10
+              hover:bg-white/20
+              text-white
+              text-xs
+              font-medium
+              rounded-xl
+              transition-all
+              duration-200
+              flex
+              items-center
+              space-x-1.5
+              border
+              border-white/20
+              shadow-sm
+              active:scale-95
+            "
+          >
+            <i class="fa-solid fa-gear text-emerald-200"></i>
+            <span>จัดการยอดบริจาค</span>
+          </button>
+        </div>
+
+        <!-- Total -->
+        <div
+          class="
+            flex
+            items-baseline
+            space-x-2
+            mt-4
+            sm:mt-6
+          "
+        >
+          <span
+            id="totalDonation"
+            class="
+              text-4xl
+              sm:text-6xl
+              font-extrabold
+              tracking-tight
+              transition-transform
+              duration-200
+            "
+          >
+            14,000.00
+          </span>
+
+          <span
+            class="
+              text-base
+              sm:text-lg
+              font-medium
+              text-emerald-100
+            "
+          >
+            บาท
+          </span>
+        </div>
+      </div>
+
+      <!-- Last Updated -->
+      <div
+        class="
+          mt-6
+          pt-4
+          border-t
+          border-white/20
+          flex
+          items-center
+          justify-end
+          text-xs
+          sm:text-sm
+          text-emerald-100
+        "
+      >
+        <div
+          class="
+            flex
+            items-center
+            space-x-2
+            bg-black/20
+            px-3.5
+            py-1.5
+            rounded-full
+            text-xs
+          "
+        >
+          <i class="fa-regular fa-clock text-emerald-300"></i>
+          <span>
+            อัปเดตล่าสุด:
+            <strong id="lastUpdatedTime" class="font-normal text-white">
+              กำลังโหลด...
+            </strong>
+          </span>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- =====================================================
+         Bank
+    ====================================================== -->
+
+    <section
+      aria-labelledby="bank-account-title"
+      class="
+        bg-white
+        dark:bg-slate-800
+        p-6
+        rounded-3xl
+        shadow-sm
+        border
+        border-slate-200/80
+        dark:border-slate-700
+        flex
+        flex-col
+        justify-between
+        space-y-4
+        transition-colors
+        duration-300
+      "
+    >
+
+      <div>
+        <div
+          class="
+            flex
+            items-center
+            justify-between
+            mb-3
+          "
+        >
+          <h2
+            id="bank-account-title"
+            class="
+              text-xs
+              font-semibold
+              uppercase
+              tracking-wider
+              text-slate-400
+              dark:text-slate-400
+            "
+          >
+            ช่องทางโอนเงิน
+          </h2>
+
+          <div
+            class="
+              w-9
+              h-9
+              rounded-2xl
+              bg-white
+              p-1
+              flex
+              items-center
+              justify-center
+              shadow-sm
+              border
+              border-slate-100
+              overflow-hidden
+            "
+          >
+            <img
+              src="https://upload.wikimedia.org/wikipedia/th/4/4a/Logo_GSB_Thailand.svg"
+              alt="GSB Logo"
+              class="w-full h-full object-contain"
+            >
+          </div>
+        </div>
+
+        <div class="space-y-1">
+          <p
+            id="bankName"
+            class="
+              text-sm
+              font-bold
+              text-[#eb008b]
+            "
+          >
+            ธนาคารออมสิน
+          </p>
+
+          <p
+            id="accountName"
+            class="
+              text-xs
+              text-slate-600
+              dark:text-slate-300
+              font-medium
+            "
+          >
+            เจะมะรูดิน อิสมิน
+          </p>
+
+          <p
+            id="accountNumber"
+            class="
+              text-base
+              sm:text-lg
+              font-bold
+              font-mono
+              text-slate-900
+              dark:text-white
+              pt-1
+              tracking-wider
+            "
+          >
+            020-4-2153701-8
+          </p>
+        </div>
+      </div>
+
+      <!-- QR -->
+      <div
+        class="
+          bg-slate-50
+          dark:bg-slate-900/50
+          border
+          border-slate-200/60
+          dark:border-slate-700
+          rounded-2xl
+          p-3
+          text-center
+          space-y-2
+        "
+      >
+        <div
+          class="
+            flex
+            items-center
+            justify-center
+            space-x-1.5
+            text-blue-900
+            dark:text-blue-300
+            font-bold
+            text-xs
+          "
+        >
+          <i class="fa-solid fa-qrcode"></i>
+          <span>Thai QR Payment / พร้อมเพย์</span>
+        </div>
+
+        <div
+          class="
+            relative
+            group
+            cursor-pointer
+          "
+          onclick="openQRModal()"
+        >
+          <img
+            id="promptpayQrImg"
+            src="https://promptpay.io/0984187156.png"
+            alt="PromptPay QR Code"
+            class="
+              w-32
+              h-32
+              mx-auto
+              rounded-xl
+              shadow-sm
+              border
+              border-slate-200
+              dark:border-slate-700
+              bg-white
+              object-contain
+              hover:scale-105
+              transition-transform
+              duration-200
+            "
+          >
+
+          <div
+            class="
+              absolute
+              inset-0
+              bg-slate-900/20
+              opacity-0
+              group-hover:opacity-100
+              transition-opacity
+              duration-200
+              rounded-xl
+              flex
+              items-center
+              justify-center
+              text-white
+              text-xs
+              font-semibold
+            "
+          >
+            <i class="fa-solid fa-expand mr-1"></i> ขยาย QR
+          </div>
+        </div>
+
+        <p class="text-[10px] text-slate-400 dark:text-slate-400">
+          สแกนผ่านแอปธนาคารได้ทุกธนาคาร
+        </p>
+      </div>
+
+      <button
+        onclick="copyBankAccount()"
+        class="
+          w-full
+          py-2.5
+          px-4
+          bg-pink-50
+          hover:bg-[#eb008b]
+          hover:text-white
+          dark:bg-pink-950/30
+          dark:hover:bg-[#eb008b]
+          text-[#eb008b]
+          dark:text-pink-300
+          dark:hover:text-white
+          text-xs
+          font-semibold
+          rounded-2xl
+          transition-all
+          duration-200
+          flex
+          items-center
+          justify-center
+          space-x-2
+          border
+          border-pink-100
+          dark:border-pink-900/50
+        "
+      >
+        <i class="fa-regular fa-copy"></i>
+        <span id="copyBtnText">คัดลอกเลขบัญชี</span>
+      </button>
+
+    </section>
+
+  </div>
+
+  <!-- =======================================================
+       Ticker
+  ======================================================== -->
+
+  <section
+    aria-labelledby="ticker-title"
+    class="
+      bg-white
+      dark:bg-slate-800
+      rounded-2xl
+      shadow-sm
+      border
+      border-slate-200/80
+      dark:border-slate-700
+      px-4
+      py-2.5
+      overflow-hidden
+      flex
+      items-center
+      transition-colors
+      duration-300
+    "
+  >
+
+    <h2 id="ticker-title" class="sr-only">ประกาศข้อความวิ่ง</h2>
+
+    <div
+      class="
+        bg-emerald-50
+        dark:bg-emerald-950/50
+        text-emerald-700
+        dark:text-emerald-300
+        text-xs
+        font-semibold
+        px-2.5
+        py-1
+        rounded-lg
+        flex
+        items-center
+        space-x-1.5
+        shrink-0
+        mr-3
+      "
+    >
+      <i class="fa-solid fa-bullhorn"></i>
+      <span>ประกาศ</span>
+    </div>
+
+    <div class="overflow-hidden whitespace-nowrap w-full">
+      <div
+        id="tickerContent"
+        class="
+          animate-marquee
+          text-xs
+          sm:text-sm
+          text-slate-600
+          dark:text-slate-300
+          font-medium
+        "
+      >
+        ยินดีต้อนรับสู่ระบบแสดงยอดบริจาคปอเนาะคลองน้ำ
+        ขออัลลอฮ์ทรงตอบแทนความเมตตาและผลบุญแก่ทุกท่าน
+      </div>
+    </div>
+
+  </section>
+
+</main>
+
+<!-- =========================================================
+     Footer
+========================================================= -->
+
+<footer
+  class="
+    text-center
+    py-4
+    text-xs
+    text-slate-400
+    dark:text-slate-500
+    border-t
+    border-slate-200/60
+    dark:border-slate-800
+    bg-white
+    dark:bg-slate-900
+    transition-colors
+    duration-300
+  "
+>
+  ระบบบริจาคออนไลน์ © ปอเนาะคลองน้ำ
+</footer>
+
+<!-- =========================================================
+     QR MODAL
+========================================================= -->
+
+<div
+  id="qrModal"
+  class="
+    fixed
+    inset-0
+    bg-slate-900/50
+    backdrop-blur-sm
+    z-50
+    hidden
+    flex
+    items-center
+    justify-center
+    p-4
+  "
+  onclick="closeQRModal()"
+>
+
+  <div
+    class="
+      bg-white
+      dark:bg-slate-800
+      rounded-3xl
+      max-w-xs
+      w-full
+      p-6
+      shadow-2xl
+      border
+      border-slate-100
+      dark:border-slate-700
+      text-center
+      space-y-4
+    "
+    onclick="event.stopPropagation()"
+  >
+
+    <div
+      class="
+        flex
+        items-center
+        justify-between
+        border-b
+        border-slate-100
+        dark:border-slate-700
+        pb-2
+      "
+    >
+      <span class="text-xs font-bold text-slate-800 dark:text-slate-200">
+        QR Code พร้อมเพย์
+      </span>
+
+      <button
+        onclick="closeQRModal()"
+        class="
+          w-7
+          h-7
+          rounded-full
+          bg-slate-100
+          dark:bg-slate-700
+          text-slate-400
+          hover:text-slate-600
+          dark:hover:text-slate-200
+          flex
+          items-center
+          justify-center
+          text-xs
+        "
+      >
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <img
+      src="https://promptpay.io/0984187156.png"
+      alt="PromptPay QR Code Large"
+      class="
+        w-56
+        h-56
+        mx-auto
+        rounded-2xl
+        border
+        border-slate-200
+        dark:border-slate-700
+        p-2
+        bg-white
+      "
+    >
+
+    <div>
+      <p class="text-sm font-bold text-slate-800 dark:text-slate-100">
+        เจะมะรูดิน อิสมิน
+      </p>
+      <p class="text-xs text-slate-500 dark:text-slate-400 font-mono">
+        020-4-2153701-8
+      </p>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- =========================================================
+     ADMIN MODAL
+========================================================= -->
+
+<div
+  id="adminModal"
+  class="
+    fixed
+    inset-0
+    bg-slate-900/50
+    backdrop-blur-sm
+    z-50
+    hidden
+    flex
+    items-center
+    justify-center
+    p-4
+    sm:p-6
+  "
+>
+
+  <div
+    class="
+      bg-white
+      dark:bg-slate-800
+      rounded-3xl
+      max-w-2xl
+      w-full
+      p-8
+      sm:p-10
+      shadow-2xl
+      border
+      border-slate-100
+      dark:border-slate-700
+      space-y-6
+    "
+  >
+
+    <!-- Header -->
+    <div
+      class="
+        flex
+        items-center
+        justify-between
+        pb-4
+        border-b
+        border-slate-100
+        dark:border-slate-700
+      "
+    >
+      <h3
+        class="
+          text-xl
+          sm:text-2xl
+          font-bold
+          text-slate-900
+          dark:text-white
+          flex
+          items-center
+          space-x-3
+        "
+      >
+        <i class="fa-solid fa-sliders text-emerald-600 text-2xl sm:text-3xl"></i>
+        <span>จัดการยอดบริจาค</span>
+      </h3>
+
+      <button
+        onclick="closeAdminModal()"
+        class="
+          w-10
+          h-10
+          rounded-full
+          bg-slate-100
+          dark:bg-slate-700
+          text-slate-400
+          hover:text-slate-600
+          dark:hover:text-slate-200
+          flex
+          items-center
+          justify-center
+          text-lg
+          transition-colors
+        "
+      >
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- Inputs -->
+    <div class="space-y-5">
+
+      <!-- Current -->
+      <div>
+        <label
+          class="
+            block
+            font-medium
+            text-slate-700
+            dark:text-slate-300
+            text-base
+            sm:text-lg
+            mb-2
+          "
+        >
+          ยอดบริจาครวมปัจจุบัน (บาท)
+        </label>
+
+        <input
+          type="text"
+          id="inputTotalDonation"
+          oninput="formatInputWithCommas(this)"
+          class="
+            w-full
+            px-4
+            py-3.5
+            bg-slate-50
+            dark:bg-slate-900
+            border
+            border-slate-200
+            dark:border-slate-700
+            rounded-2xl
+            focus:outline-none
+            focus:ring-2
+            focus:ring-emerald-500
+            font-mono
+            text-lg
+            sm:text-xl
+            font-bold
+            text-slate-800
+            dark:text-white
+          "
+          placeholder="0.00"
+        >
+      </div>
+
+      <!-- Add -->
+      <div>
+        <label
+          class="
+            block
+            font-medium
+            text-emerald-700
+            dark:text-emerald-400
+            text-base
+            sm:text-lg
+            mb-2
+            flex
+            items-center
+            space-x-2
+          "
+        >
+          <i class="fa-solid fa-circle-plus"></i>
+          <span>เพิ่มยอดเงินบริจาคสมทบ (บาท)</span>
+        </label>
+
+        <input
+          type="text"
+          id="inputAddDonation"
+          oninput="formatInputWithCommas(this)"
+          class="
+            w-full
+            px-4
+            py-3.5
+            bg-emerald-50/50
+            dark:bg-emerald-950/30
+            border
+            border-emerald-200
+            dark:border-emerald-800
+            rounded-2xl
+            focus:outline-none
+            focus:ring-2
+            focus:ring-emerald-500
+            font-mono
+            text-lg
+            sm:text-xl
+            font-bold
+            text-emerald-900
+            dark:text-emerald-200
+          "
+          placeholder="0.00"
+        >
+
+        <p class="text-xs sm:text-sm text-slate-400 dark:text-slate-400 mt-1.5">
+          * กรอกจำนวนเงินเพื่อบวกเข้ากับยอดบริจาคสะสม
+        </p>
+      </div>
+
+      <!-- Preview -->
+      <div
+        class="
+          bg-emerald-50
+          dark:bg-emerald-950/40
+          border
+          border-emerald-100
+          dark:border-emerald-900/50
+          rounded-2xl
+          p-4
+        "
+      >
+        <div class="flex items-center justify-between text-sm">
+          <span class="text-slate-500 dark:text-slate-400">
+            ยอดหลังบันทึก
+          </span>
+          <strong
+            id="previewTotalDonation"
+            class="
+              text-xl
+              font-bold
+              text-emerald-700
+              dark:text-emerald-300
+            "
+          >
+            0.00 บาท
+          </strong>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Buttons -->
+    <div
+      class="
+        flex
+        items-center
+        justify-end
+        space-x-3
+        pt-4
+        border-t
+        border-slate-100
+        dark:border-slate-700
+      "
+    >
+      <button
+        onclick="closeAdminModal()"
+        class="
+          px-6
+          py-3
+          bg-slate-100
+          dark:bg-slate-700
+          hover:bg-slate-200
+          dark:hover:bg-slate-600
+          text-slate-600
+          dark:text-slate-200
+          text-sm
+          sm:text-base
+          font-semibold
+          rounded-2xl
+          transition-colors
+        "
+      >
+        ยกเลิก
+      </button>
+
+      <button
+        id="saveDonationButton"
+        onclick="saveAdminData()"
+        class="
+          px-7
+          py-3
+          bg-emerald-600
+          hover:bg-emerald-700
+          text-white
+          text-sm
+          sm:text-base
+          font-semibold
+          rounded-2xl
+          transition-colors
+          shadow-md
+          flex
+          items-center
+          space-x-2
+        "
+      >
+        <i class="fa-solid fa-floppy-disk"></i>
+        <span>บันทึกการเปลี่ยนแปลง</span>
+      </button>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- =========================================================
+     TOAST
+========================================================= -->
+
+<div
+  id="toast"
+  class="
+    toast
+    fixed
+    bottom-5
+    left-1/2
+    -translate-x-1/2
+    z-[100]
+    px-5
+    py-3
+    rounded-2xl
+    shadow-xl
+    text-white
+    text-sm
+    font-medium
+    flex
+    items-center
+    gap-2
+  "
+>
+  <i id="toastIcon" class="fa-solid fa-check"></i>
+  <span id="toastMessage">สำเร็จ</span>
+</div>
+
+<!-- =========================================================
+     JAVASCRIPT
+========================================================= -->
+
+<script>
+
+/* ==========================================================
+   ระบบสลับธีม (Dark / Light Mode)
+========================================================== */
+
+function initTheme() {
+  const savedTheme = localStorage.getItem('theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+  if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+    document.documentElement.classList.add('dark');
+    document.documentElement.classList.remove('light');
+    updateThemeIcon(true);
+  } else {
+    document.documentElement.classList.add('light');
+    document.documentElement.classList.remove('dark');
+    updateThemeIcon(false);
+  }
+}
+
+function toggleTheme() {
+  const isDark = document.documentElement.classList.toggle('dark');
+  if (isDark) {
+    document.documentElement.classList.remove('light');
+    localStorage.setItem('theme', 'dark');
+  } else {
+    document.documentElement.classList.add('light');
+    localStorage.setItem('theme', 'light');
+  }
+  updateThemeIcon(isDark);
+}
+
+function updateThemeIcon(isDark) {
+  const icon = document.getElementById('themeIcon');
+  if (icon) {
+    if (isDark) {
+      icon.className = 'fa-solid fa-sun text-lg';
+    } else {
+      icon.className = 'fa-solid fa-moon text-lg';
+    }
+  }
+}
+
+
+/* ==========================================================
+   ตัวแปรระบบ
+========================================================== */
+
+let currentDonationTotal = 14000;
+let isSaving = false;
+
+
+/* ==========================================================
+   แปลงวันที่ dd/MM/yyyy HH:mm น. เป็น วัน เดือน(ไทย) พ.ศ.
+========================================================== */
+
+function formatThaiDateString(dateStr) {
+  if (!dateStr || typeof dateStr !== 'string') return dateStr;
+
+  const thaiMonths = [
+    'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน',
+    'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม',
+    'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+  ];
+
+  const regex = /(\d{1,2})\/(\d{1,2})\/(\d{4})/;
+  const match = dateStr.match(regex);
+
+  if (match) {
+    const day = parseInt(match[1], 10);
+    const monthIndex = parseInt(match[2], 10) - 1;
+    const yearBE = parseInt(match[3], 10) + 543;
+
+    if (monthIndex >= 0 && monthIndex < 12) {
+      const formattedDate = `${day} ${thaiMonths[monthIndex]} ${yearBE}`;
+      return dateStr.replace(regex, formattedDate);
+    }
+  }
+
+  return dateStr;
+}
+
+
+/* ==========================================================
+   Copy เลขบัญชี
+========================================================== */
+
+function copyBankAccount() {
+  const accountNumber = document.getElementById('accountNumber').innerText;
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(accountNumber)
+      .then(function() {
+        const btnText = document.getElementById('copyBtnText');
+        btnText.innerText = 'คัดลอกเรียบร้อย!';
+        setTimeout(function() {
+          btnText.innerText = 'คัดลอกเลขบัญชี';
+        }, 2000);
+      })
+      .catch(function() {
+        showToast('ไม่สามารถคัดลอกได้', 'error');
+      });
+  } else {
+    showToast('เบราว์เซอร์ไม่รองรับการคัดลอก', 'error');
+  }
+}
+
+
+/* ==========================================================
+   QR Modal
+========================================================== */
+
+function openQRModal() {
+  document.getElementById('qrModal').classList.remove('hidden');
+}
+
+function closeQRModal() {
+  document.getElementById('qrModal').classList.add('hidden');
+}
+
+
+/* ==========================================================
+   Admin Modal
+========================================================== */
+
+function openAdminModal() {
+  document.getElementById('inputTotalDonation').value =
+    formatNumberWithCommas(currentDonationTotal);
+
+  document.getElementById('inputAddDonation').value = '';
+
+  updateDonationPreview();
+
+  document.getElementById('adminModal').classList.remove('hidden');
+}
+
+function closeAdminModal() {
+  if (isSaving) return;
+  document.getElementById('adminModal').classList.add('hidden');
+}
+
+
+/* ==========================================================
+   Number Parser
+========================================================== */
+
+function parseNumberWithCommas(value) {
+  if (value === null || value === undefined || value === '') return 0;
+
+  const cleanValue = value.toString().replace(/,/g, '').replace(/[^\d.-]/g, '');
+  const result = parseFloat(cleanValue);
+
+  return isFinite(result) ? result : 0;
+}
+
+
+/* ==========================================================
+   Number Formatter
+========================================================== */
+
+function formatNumberWithCommas(number) {
+  const safeNumber = Number(number) || 0;
+  return safeNumber.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
+
+
+/* ==========================================================
+   Input Formatter
+========================================================== */
+
+function formatInputWithCommas(input) {
+  let value = input.value.replace(/[^0-9.]/g, '');
+  const parts = value.split('.');
+
+  if (parts.length > 2) {
+    value = parts[0] + '.' + parts.slice(1).join('');
+  }
+
+  if (value === '') {
+    input.value = '';
+    updateDonationPreview();
+    return;
+  }
+
+  let formatted = '';
+
+  if (parts[0]) {
+    formatted = parseInt(parts[0], 10).toLocaleString('en-US');
+  }
+
+  if (parts.length > 1) {
+    formatted += '.' + parts[1].slice(0, 2);
+  }
+
+  input.value = formatted;
+  updateDonationPreview();
+}
+
+
+/* ==========================================================
+   Preview
+========================================================== */
+
+function updateDonationPreview() {
+  const total = parseNumberWithCommas(document.getElementById('inputTotalDonation').value);
+  const add = parseNumberWithCommas(document.getElementById('inputAddDonation').value);
+  const preview = total + add;
+
+  document.getElementById('previewTotalDonation').innerText =
+    formatNumberWithCommas(preview) + ' บาท';
+}
+
+
+/* ==========================================================
+   Flash Effect
+========================================================== */
+
+function triggerNumberFlashEffect() {
+  const element = document.getElementById('totalDonation');
+
+  element.classList.remove('animate-number-update');
+  void element.offsetWidth;
+  element.classList.add('animate-number-update');
+
+  setTimeout(function() {
+    element.classList.remove('animate-number-update');
+  }, 1200);
+}
+
+
+/* ==========================================================
+   Toast
+========================================================== */
+
+function showToast(message, type) {
+  const toast = document.getElementById('toast');
+  const icon = document.getElementById('toastIcon');
+  const text = document.getElementById('toastMessage');
+
+  text.innerText = message;
+
+  toast.classList.remove('bg-emerald-600', 'bg-red-600', 'bg-slate-800');
+  icon.className = 'fa-solid';
+
+  if (type === 'error') {
+    toast.classList.add('bg-red-600');
+    icon.classList.add('fa-circle-exclamation');
+  } else if (type === 'info') {
+    toast.classList.add('bg-slate-800');
+    icon.classList.add('fa-circle-info');
+  } else {
+    toast.classList.add('bg-emerald-600');
+    icon.classList.add('fa-circle-check');
+  }
+
+  toast.classList.add('show');
+
+  clearTimeout(window.toastTimer);
+  window.toastTimer = setTimeout(function() {
+    toast.classList.remove('show');
+  }, 3000);
+}
+
+
+/* ==========================================================
+   แสดงยอดบนหน้าเว็บ
+========================================================== */
+
+function updateDonationDisplay(totalDonation, lastUpdated) {
+  const total = parseNumberWithCommas(totalDonation);
+  currentDonationTotal = total;
+
+  document.getElementById('totalDonation').innerText = formatNumberWithCommas(total);
+  document.getElementById('lastUpdatedTime').innerText = formatThaiDateString(lastUpdated);
+}
+
+
+/* ==========================================================
+   โหลดข้อมูลจาก Google Sheets
+========================================================== */
+
+function loadDonationData() {
+  document.getElementById('lastUpdatedTime').innerText = 'กำลังโหลด...';
+
+  if (typeof google === 'undefined' || !google.script || !google.script.run) {
+    showToast('กรุณาเปิดผ่าน Google Apps Script Web App', 'error');
+    return;
+  }
+
+  google.script.run
+    .withSuccessHandler(function(result) {
+      if (result && result.status === 'success') {
+        updateDonationDisplay(result.totalDonation, result.lastUpdated);
+      } else {
+        showToast(result.message || 'ไม่สามารถโหลดข้อมูลได้', 'error');
+      }
+    })
+    .withFailureHandler(function(error) {
+      console.error(error);
+      showToast('ไม่สามารถเชื่อมต่อ Google Sheets ได้', 'error');
+      document.getElementById('lastUpdatedTime').innerText = 'ไม่สามารถโหลดข้อมูลได้';
+    })
+    .getDonationData();
+}
+
+
+/* ==========================================================
+   บันทึกข้อมูล
+========================================================== */
+
+function saveAdminData() {
+  if (isSaving) return;
+
+  const currentTotal = parseNumberWithCommas(document.getElementById('inputTotalDonation').value);
+  const addAmount = parseNumberWithCommas(document.getElementById('inputAddDonation').value);
+
+  if (currentTotal < 0) {
+    showToast('ยอดบริจาคไม่สามารถติดลบได้', 'error');
+    return;
+  }
+
+  if (addAmount < 0) {
+    showToast('ยอดเพิ่มไม่สามารถติดลบได้', 'error');
+    return;
+  }
+
+  if (currentTotal === 0 && addAmount === 0) {
+    showToast('กรุณาระบุยอดบริจาค', 'error');
+    return;
+  }
+
+  isSaving = true;
+
+  const button = document.getElementById('saveDonationButton');
+  const oldButtonHTML = button.innerHTML;
+
+  button.disabled = true;
+  button.classList.add('opacity-70', 'cursor-not-allowed');
+  button.innerHTML = `
+    <span class="loading-spinner"></span>
+    <span>กำลังบันทึก...</span>
+  `;
+
+  if (typeof google === 'undefined' || !google.script || !google.script.run) {
+    finishSaving(button, oldButtonHTML);
+    showToast('กรุณาเปิดผ่าน Google Apps Script Web App', 'error');
+    return;
+  }
+
+  google.script.run
+    .withSuccessHandler(function(result) {
+      finishSaving(button, oldButtonHTML);
+
+      if (result && result.status === 'success') {
+        updateDonationDisplay(result.totalDonation, result.lastUpdated);
+        triggerNumberFlashEffect();
+        closeAdminModal();
+        showToast('บันทึกยอดบริจาคลง Google Sheets แล้ว', 'success');
+      } else {
+        showToast(result.message || 'ไม่สามารถบันทึกข้อมูลได้', 'error');
+      }
+    })
+    .withFailureHandler(function(error) {
+      console.error(error);
+      finishSaving(button, oldButtonHTML);
+      showToast('เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error');
+    })
+    .saveDonationData(currentTotal, '', addAmount);
+}
+
+
+/* ==========================================================
+   คืนค่าปุ่มบันทึก
+========================================================== */
+
+function finishSaving(button, oldButtonHTML) {
+  isSaving = false;
+  button.disabled = false;
+  button.classList.remove('opacity-70', 'cursor-not-allowed');
+  button.innerHTML = oldButtonHTML;
+}
+
+
+/* ==========================================================
+   กด ESC เพื่อปิด Modal
+========================================================== */
+
+document.addEventListener('keydown', function(event) {
+  if (event.key === 'Escape') {
+    closeQRModal();
+    closeAdminModal();
+  }
+});
+
+
+/* ==========================================================
+   Event สำหรับ Preview
+========================================================== */
+
+document.getElementById('inputTotalDonation').addEventListener('input', updateDonationPreview);
+document.getElementById('inputAddDonation').addEventListener('input', updateDonationPreview);
+
+
+/* ==========================================================
+   เริ่มระบบ
+========================================================== */
+
+window.addEventListener('load', function() {
+  initTheme();
+  loadDonationData();
+});
+
+</script>
 
 </body>
 </html>
