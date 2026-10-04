@@ -1,33 +1,37 @@
-
 <!DOCTYPE html>
 <html lang="th">
 <head>
     <base target="_top">
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <!-- ป้องกันการขยายหน้าจอผิดปกติบนมือถือ -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- ป้องกันการย่อ/ขยายหน้าจอบนมือถือ -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>ระบบแสดงยอดบริจาคปอเนาะคลองน้ำ</title>
     <style>
-        /* ลบ Margin/Padding ของเบราว์เซอร์ เพื่อให้แสดงผลได้เต็มขอบจริง */
+        /* ลบ Margin และ Padding ทั้งหมด */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
+        /* ตั้งค่า HTML และ Body ให้เต็มหน้าจอแบบคงที่ ไม่เกิดการ Scroll */
         html, body {
             width: 100%;
             height: 100%;
-            overflow: hidden; /* ป้องกันการเกิด Double Scrollbar */
+            height: 100vh;
+            height: 100dvh; /* ปรับตามความสูงจริงบนมือถือ รวมแถบ URL */
+            overflow: hidden;
             background-color: #ffffff;
+            position: fixed; /* ล็อกตำแหน่งไม่ให้หน้าจอเด้งหรือไถลบน iOS */
+            top: 0;
+            left: 0;
         }
 
-        /* ปรับ iframe ให้เต็มพื้นที่หน้าจอและรองรับการแสดงผลบนอุปกรณ์เคลื่อนที่ */
+        /* iframe แสดงผลเต็มพื้นที่ 100% โดยไม่มีขอบ */
         .full-screen-iframe {
             width: 100%;
-            height: 100vh; /* เติมเต็มความสูงของหน้าจอ */
-            height: 100dvh; /* รองรับ Dynamic Viewport สำหรับ iOS/Android safari bar */
+            height: 100%;
             border: none;
             display: block;
         }
