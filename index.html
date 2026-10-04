@@ -4,11 +4,11 @@
     <base target="_top">
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <!-- ป้องกันการขยายหน้าจอผิดปกติบนมือถือ -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- กำหนด Viewport เพื่อป้องกันการซูมและจัดขนาดให้พอดีกับหน้าจอมือถือ -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>ระบบแสดงยอดบริจาคปอเนาะคลองน้ำ</title>
     <style>
-        /* ลบ Margin/Padding ของเบราว์เซอร์ เพื่อให้แสดงผลได้เต็มขอบจริง */
+        /* รีเซ็ต Margin/Padding และป้องกันการเกิด Scrollbar ซ้ำซ้อน */
         * {
             margin: 0;
             padding: 0;
@@ -18,15 +18,17 @@
         html, body {
             width: 100%;
             height: 100%;
-            overflow: hidden; /* ป้องกันการเกิด Double Scrollbar */
+            overflow: hidden;
             background-color: #ffffff;
+            /* ป้องกันการเด้งหรือสโครลล์เกินขอบบนมือถือ (Elastic Scrolling) */
+            overscroll-behavior: none; 
         }
 
-        /* ปรับ iframe ให้เต็มพื้นที่หน้าจอและรองรับการแสดงผลบนอุปกรณ์เคลื่อนที่ */
+        /* ปรับ iframe ให้ขยายเต็มหน้าจอ และรองรับ Dynamic Viewport (dvh) บนมือถือ */
         .full-screen-iframe {
-            width: 100%;
-            height: 100vh; /* เติมเต็มความสูงของหน้าจอ */
-            height: 100dvh; /* รองรับ Dynamic Viewport สำหรับ iOS/Android safari bar */
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh; /* ปรับขนาดตามความสูงจริงเมื่อแถบ URL ย่อ/ขยาย */
             border: none;
             display: block;
         }
@@ -37,7 +39,7 @@
     <iframe 
         class="full-screen-iframe"
         src="https://script.google.com/macros/s/AKfycbyh9oKJJUFojdoUabKhq495pCf9HGR7HxjFdR8ZvJgVWR3w5ZH6cnwxWYmKpsXm0AIHQQ/exec" 
-        allow="geolocation; microphone; camera; clipboard-write;"
+        allow="geolocation; microphone; camera; clipboard-write; autoplay;"
         scrolling="yes">
     </iframe>
 
